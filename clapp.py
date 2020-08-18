@@ -3,9 +3,11 @@
 
 import time
 import sys
-import colored
 import subprocess
 import os
+
+import ansicolors
+from ansicolors import colorize
 
 STATUS_SUCCESS    = 0
 STATUS_PENDING    = 1
@@ -15,24 +17,18 @@ STATUS_FAILED     = 4
 STATUS_ERROR      = 5
 STATUS_UNKNOWN    = -1
 
-USE_COLORS = True
-
-def colorize(text, styles):
-    return colored.stylize(text, styles) if USE_COLORS else text
-# end function
-
 status_prettystr = {
-    STATUS_SUCCESS    : colorize("√ OK", colored.fg("green")  + colored.attr("bold")),
-    STATUS_PENDING    : colorize("+", colored.fg("light_gray") + colored.attr("dim")),
-    STATUS_SKIPPED    : colorize("o skipped", colored.fg("dark_gray")),
-    STATUS_CANCELLED  : colorize("% cancelled", colored.fg("yellow")),
-    STATUS_FAILED     : colorize("X FAILED", colored.fg("red") + colored.attr("bold")),
-    STATUS_ERROR      : colorize("! ERROR", colored.bg("red") + colored.attr("underlined") + colored.attr("bold")),
-    STATUS_UNKNOWN    : colorize("? unknown", colored.fg("cyan")),
+    STATUS_SUCCESS    : colorize("√ OK", fg="green", style="bold"),
+    STATUS_PENDING    : colorize("+", fg="gray"),
+    STATUS_SKIPPED    : colorize("o skipped", fg="gray"),
+    STATUS_CANCELLED  : colorize("% cancelled", fg="yellow"),
+    STATUS_FAILED     : colorize("X FAILED", fg="red", style="bold"),
+    STATUS_ERROR      : colorize("! ERROR", fg="white", bg="red", style="bold"),
+    STATUS_UNKNOWN    : colorize("? unknown", fg="cyan"),
 }
 
-def colorize_substr(frames, what, styles):
-    return [x.replace(what, colorize(what, styles)) for x in frames]
+def colorize_substr(frames, what, fg, bg, styles):
+    return [x.replace(what, colorize(what, fg, bg, styles)) for x in frames]
         
 class StatusIndicator:
     def __init__(self, text, multi_line = False):
@@ -42,7 +38,7 @@ class StatusIndicator:
         self.line = None
         self.count = 0
         self.value = None
-        self.frames = colorize_substr(['●○○○', '○●○○', '○○●○', '○○○●', '○○●○', '○●○○'], '●', colored.fg("light_yellow")+ colored.attr("bold"))
+        self.frames = colorize_substr(['●○○○', '○●○○', '○○●○', '○○○●', '○○●○', '○●○○'], '●', fg="yellow", bg=None, styles="bold")
         self.is_done = False
         self.format = '[ {0} ] {1}'
         self.start_time = time.time()
@@ -104,7 +100,7 @@ class StatusIndicator:
                 comments.append('took %.3fs' % elapsed)
             # end if
             if comments:
-                self.text += colorize(' (%s)' % (', '.join(comments)), colored.fg("dark_gray")) 
+                self.text += colorize(' (%s)' % (', '.join(comments)), fg="bright_black")
             # end if
             self.update(status)
             sys.stdout.write('\n')
@@ -138,7 +134,8 @@ def exec(msg, cmd):
     # - read non-blocking from process stdout to animate throbber
     # - let pipe appear as console for child process for proper flushing / progress parsing
     with StatusIndicator(msg, multi_line=True) as status:
-        print(colored.fg('dark_gray') + HRULE)
+        ansicolors.set_color('gray')
+        print(HRULE)
         print('> ' + cmd)
         print(HRULE)
         exitcode = None
@@ -148,7 +145,8 @@ def exec(msg, cmd):
             print('< process exited with code %s' % exitcode)
         finally:
             subprocess.call('', shell=True) # workaround for non-working ANSI Escape Codes
-            print(HRULE + colored.attr('reset'))
+            print(HRULE)
+            ansicolors.reset_color()
         # end if
         if exitcode == 0:
             status.success()
