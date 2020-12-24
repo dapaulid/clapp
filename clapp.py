@@ -6,6 +6,9 @@ import sys
 import subprocess
 import os
 
+
+import command
+
 import ansicolors
 from ansicolors import colorize
 
@@ -26,6 +29,9 @@ status_prettystr = {
     STATUS_ERROR      : colorize("! ERROR", fg="white", bg="red", style="bold"),
     STATUS_UNKNOWN    : colorize("? unknown", fg="cyan"),
 }
+
+# to fix encoding error when redirecting to file (under Windows)
+sys.stdout.reconfigure(encoding='utf-8')
 
 def colorize_substr(frames, what, fg, bg, styles):
     return [x.replace(what, colorize(what, fg, bg, styles)) for x in frames]
@@ -140,11 +146,11 @@ def exec(msg, cmd):
         print(HRULE)
         exitcode = None
         try:
-            exitcode = subprocess.call(cmd)
+            exitcode = command.exec(cmd)
             print(HRULE)
             print('< process exited with code %s' % exitcode)
         finally:
-            subprocess.call('', shell=True) # workaround for non-working ANSI Escape Codes
+            #subprocess.call('', shell=True) # workaround for non-working ANSI Escape Codes
             print(HRULE)
             ansicolors.reset_color()
         # end if
